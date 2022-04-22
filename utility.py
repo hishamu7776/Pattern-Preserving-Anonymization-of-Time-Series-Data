@@ -1,4 +1,9 @@
 import pandas as pd
+import numpy as np
+from saxpy.znorm import znorm
+from saxpy.paa import paa
+from saxpy.alphabet import cuts_for_asize
+from saxpy.sax import ts_to_string
 
 def clean_data(path='dataset/dataset.csv',final_column=''):
     dataset = pd.read_csv(path)
@@ -51,3 +56,9 @@ def compute_ncp(table=None , max_val=None, min_val=None):
     ncp_T = table_size*ncp_t
     return ncp_T
   
+def find_pr(ts,paa_val,level):
+    data = np.array(ts)
+    data_znorm = znorm(data)
+    data_paa = paa(data_znorm,paa_val)
+    pr = ts_to_string(data_paa, cuts_for_asize(level))
+    return pr
