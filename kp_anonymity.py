@@ -28,3 +28,5 @@ for group in k_anonymized_data:
   bad_leaves = list()
   node = Node(level=1, group=group, paa_value=paa_val)
   node.start_splitting(p_val, max_level, good_leaves, bad_leaves)
+  if len(bad_leaves) > 0:
+    Node.postprocessing(good_leaves, bad_leaves)

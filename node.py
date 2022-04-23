@@ -1,5 +1,6 @@
 
 
+from turtle import st
 import utility as Utility
 import numpy as np
 
@@ -107,8 +108,29 @@ class Node:
               node = Node(level=self.level, pr=pr_tg[idx], label="good-leaf", group=tg_nodes[idx], parent=self)
               self.child_node.append(node)
               good_leaves.append(node)
+  def postprocessing(good_leaves, bad_leaves):
+      difference = float('inf')
+      for bad_leaf in bad_leaves:
+            pattern_representation_bad_node = bad_leaf.pr
+            choose_node = None
+            for index in range(0, len(good_leaves)):
+                pattern_representation_good_node = good_leaves[index].pr
+                difference_good_bad = sum(1 for a, b in zip(pattern_representation_good_node,
+                                                            pattern_representation_bad_node) if a != b)
+                if difference_good_bad < difference:
+                    choose_node = index
 
-    
+      # choose_node contain good node with minimum difference between pattern representation
+      Node.add_row_to_node(good_leaves[choose_node], bad_leaf)
+      # delete all bad_leaf nodes
+      bad_leaves = list()
+  def add_row_to_node(node_original, node_to_add):
+      for key, value in node_to_add.group.items():
+          node_original.group[key] = value
+          node_original.members = list(node_original.group.keys())
+          node_original.size = len(node_original.group)
+
+
   def maximize_level(self, max_level):
     values = list(self.group.values())
     current_level = self.level
