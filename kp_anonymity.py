@@ -5,7 +5,11 @@ import numpy as np
 import pandas as pd
 import utility as Utility
 import top_down as TopDown
-
+from node import Node
+k_val = 5
+p_val = 2
+max_level = 5
+paa_val = 8
 path = 'dataset/Sales_Transactions_Dataset_Weekly.csv'
 Utility.clean_data(path=path,final_column='W51')
 dataset = pd.read_csv("dataset/Sales_Transactions_Dataset_Weekly_Cleaned.csv")
@@ -22,3 +26,5 @@ TopDown.topdown_greedy(data=duplicate, k_val=5, max_val=max_attr, min_val=min_at
 for group in k_anonymized_data:
   good_leaves = list()
   bad_leaves = list()
+  node = Node(level=1, group=group, paa_value=paa_val)
+  node.start_splitting(p_val, max_level, good_leaves, bad_leaves)
