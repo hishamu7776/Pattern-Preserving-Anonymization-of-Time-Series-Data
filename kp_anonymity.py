@@ -6,10 +6,15 @@ import pandas as pd
 import utility as Utility
 import top_down as TopDown
 from node import Node
+
+
+
 k_val = 5
 p_val = 2
 max_level = 5
 paa_val = 8
+
+logger = Utility.create_logging(path='')
 path = 'dataset/Sales_Transactions_Dataset_Weekly.csv'
 Utility.clean_data(path=path,final_column='W51')
 dataset = pd.read_csv("dataset/Sales_Transactions_Dataset_Weekly_Cleaned.csv")
@@ -29,4 +34,5 @@ for group in k_anonymized_data:
   node = Node(level=1, group=group, paa_value=paa_val)
   node.start_splitting(p_val, max_level, good_leaves, bad_leaves)
   if len(bad_leaves) > 0:
-    Node.postprocessing(good_leaves, bad_leaves)
+    Utility.postprocessing(good_leaves, bad_leaves)
+  

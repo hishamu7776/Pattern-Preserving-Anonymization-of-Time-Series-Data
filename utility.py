@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import logging
 from saxpy.znorm import znorm
 from saxpy.paa import paa
 from saxpy.alphabet import cuts_for_asize
@@ -62,3 +63,32 @@ def find_pr(ts,paa_val,level):
     data_paa = paa(data_znorm,paa_val)
     pr = ts_to_string(data_paa, cuts_for_asize(level))
     return pr
+
+def create_logging(path=None):
+  file_name = "log_{}_{}_{}_{}_{}.txt".format(datetime.datetime.now().date().year, datetime.datetime.now().date().month, datetime.datetime.now().date().day, datetime.datetime.now().time().hour, datetime.datetime.now().time().minute)
+  logger= logging.getLogger()
+  logger.setLevel(logging.DEBUG) # or whatever
+  #handler = logging.FileHandler(path+file_name, 'w', 'utf-8') # or whatever
+  #handler.setFormatter(logging.Formatter('%(name)s %(message)s')) # or whatever
+  #logger.addHandler(handler)
+  return logger
+def postprocessing(good_leaves, bad_leaves):
+      difference = float('inf')
+      for bad_leaf in bad_leaves:
+            pattern_representation_bad_node = bad_leaf.pr
+            choose_node = None            
+            for index in range(0, len(good_leaves)):                
+                pattern_representation_good_node = good_leaves[index].pr
+                difference_good_bad = sum(1 for a, b in zip(pattern_representation_good_node,
+                                                            pattern_representation_bad_node) if a != b)
+                if difference_good_bad < difference:
+                    choose_node = index
+            # choose_node contain good node with minimum difference between pattern representation
+            add_row_to_node(good_leaves[choose_node], bad_leaf)
+      bad_leaves = list()
+
+def add_row_to_node(node_original, node_to_add):
+      for key, value in node_to_add.group.items():
+          node_original.group[key] = value
+      node_original.members = list(node_original.group.keys())
+      node_original.size = len(node_original.group)
