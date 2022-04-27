@@ -92,3 +92,25 @@ def add_row_to_node(node_original, node_to_add):
           node_original.group[key] = value
       node_original.members = list(node_original.group.keys())
       node_original.size = len(node_original.group)
+def compute_anonymized_data(k_anonymized=None, p_anonymized=None,kp_anonymized=None):
+  for i in range(0,len(k_anonymized)):
+    group = k_anonymized[i]
+    list_good_leaf = p_anonymized[i]
+    max_val = np.amax(np.array(list(group.values())),0)
+    min_val = np.amin(np.array(list(group.values())),0)
+    for key in group.keys():
+      kp_anonymized[key] = list()
+      row = list()
+      for idx in range(0,len(max_val)):
+        row.append("[{}-{}]".format(min_val[idx],max_val[idx]))
+      for node in list_good_leaf:
+        if key in node.group.keys():
+          row.append(node.pr)
+      row.append("Group: {}".format(i))
+      kp_anonymized[key] = row
+def save_anonymized(path,kp_anonymized):
+  with open(path,"w") as output_file:
+    row = ""
+    for k,v in kp_anonymized.items():
+      row = "{},{}".format(k,",".join(v))
+      output_file.write(row+"\n")

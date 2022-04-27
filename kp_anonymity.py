@@ -27,12 +27,18 @@ for idx, row in dataset.iterrows():
 duplicate = data_dict.copy()
 k_anonymized_data = list()
 TopDown.topdown_greedy(data=duplicate, k_val=5, max_val=max_attr, min_val=min_attr, k_anonymized=k_anonymized_data,columns=QI_names)
+anonymized_groups = list()
+pattern_anonymized = list()
+kp_anonymized = dict()
 
 for group in k_anonymized_data:
+  anonymized_groups.append(group)
   good_leaves = list()
   bad_leaves = list()
   node = Node(level=1, group=group, paa_value=paa_val)
   node.start_splitting(p_val, max_level, good_leaves, bad_leaves)
   if len(bad_leaves) > 0:
     Utility.postprocessing(good_leaves, bad_leaves)
-  
+  pattern_anonymized.append(good_leaves)
+Utility.compute_anonymized_data(k_anonymized=anonymized_groups,p_anonymized=pattern_anonymized,kp_anonymized=kp_anonymized)
+Utility.save_anonymized('output.csv',kp_anonymized)
