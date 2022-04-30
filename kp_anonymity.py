@@ -39,3 +39,7 @@ suppresed_nodes = list()
 node = Node(level=1, group=data_dict, paa_value=paa_value)
 node.start_split(p_value, max_level, good_leaves, bad_leaves)
 Utility.recycle_bad_leaves(p_value, good_leaves,bad_leaves,suppresed_nodes,paa_value)
+suppressed_nodes_list = list()
+for node in suppresed_nodes:
+  suppressed_nodes_list.append(node.group)
+  

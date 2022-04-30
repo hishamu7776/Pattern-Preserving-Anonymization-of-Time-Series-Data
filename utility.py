@@ -59,7 +59,31 @@ def compute_ncp(table=None , max_val=None, min_val=None):
             ncp_t += 0
     ncp_T = table_size*ncp_t
     return ncp_T
-  
+def max_vl(tuple_ts, data, tuple_key, max_val, min_val):
+    max_value = 0
+    max_vl_tuple = None
+    for key in data:
+        if key != tuple_key:
+            vl = compute_instant_value_loss([tuple_ts, data[key]])
+            if vl >= max_value:
+                max_vl_tuple = key
+    return max_vl_tuple  
+
+def compute_instant_value_loss(table=None , max_val=None, min_val=None):
+    lower_bound = list()
+    upper_bound = list()
+    tuple_size = len(table[0])
+    for idx in range(0,tuple_size):        
+        lb = float('inf')
+        ub = 0
+        for row in table:
+            if row[idx] > ub:
+                ub = row[idx]
+            if row[idx] < lb:
+                lb = row[idx]
+        upper_bound.append(z1_temp)
+        lower_bound.append(y1_temp)
+    return np.sqrt(sum(np.square(np.array(upper_bound)-np.array(lower_bound)))/tuple_size)*len(table)
 def find_pr(ts,paa_val,level):
     data = np.array(ts)
     data_znorm = znorm(data)
