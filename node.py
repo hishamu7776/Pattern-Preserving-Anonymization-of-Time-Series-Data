@@ -5,8 +5,6 @@ import utility as Utility
 import numpy as np
 import kp_anonymity 
 
-logger = kp_anonymity.logger
-
 class Node:
   def __init__(self,level=1, pr="",label="intermediate",group=None,parent=None,paa_value=None):
     self.level = level
@@ -23,24 +21,19 @@ class Node:
     else:
       self.pr = pr
   def start_split(self,P,max_level,good_leaves,bad_leaves):
-    logger.info("Split started")
     if self.size < P:
-      logger.info("Node is a bad-leaf")
       self.label = 'bad-leaf'
       bad_leaves.append(self)
       return
     if self.level == max_level:
-      logger.info("Node is a good-leaf")
       self.label = 'good-leaf'
       good_leaves.append(self)
       return
     if self.size >= P and self.size < 2*P:
-      logger.info("Maximisation needed for this node")
       self.maximize_level(max_level)
       self.label = 'good-leaf'
       good_leaves.append(self)
       return
-    logger.info("Creating tentative child nodes")
     tentative_child_nodes = dict()
     temp_level = self.level + 1
     for k, v in self.group.items():
@@ -49,22 +42,15 @@ class Node:
         tentative_child_nodes[pr_0].append(k)
       else:
         tentative_child_nodes[pr_0] = [k]
-    logger.info("Tentative Chiled node for this group is :- ")
-    logger.info(tentative_child_nodes)
     size_of_tcns = [len(tentative_child_nodes[key]) for key in tentative_child_nodes]
-    logger.info("Size of tentative child nodes are :- ",size_of_tcns)
     is_good_leaf = np.all(np.array(size_of_tcns) < P)
     if is_good_leaf:
-      logger.info("This node is a good leaf")
       self.label = 'good-leaf'
       good_leaves.append(self)
       return
     else:
-      logger.info("This node is not a good leaf")
       pr_keys = list(tentative_child_nodes.keys())
-      logger.info("All child node keys are : ".format(pr_keys))
       pr_tg = list()
-      logger.info("Select all good nodes")
       tg_nodes_index = list(np.where(np.array(size_of_tcns) >= P)[0])
       tg_nodes = list()
       for idx in tg_nodes_index:
@@ -74,9 +60,7 @@ class Node:
           dict_temp[key] = self.group[key]
         tg_nodes.append(dict_temp)
         pr_tg.append(pr_keys[idx])
-      logger.info("Pattern representation of good nodes are : ".format(pr_tg))
       pr_tb = list()  
-      logger.info("Selecting Bad nodes")
       tb_nodes_index = list(np.where(np.array(size_of_tcns) < P)[0])
       tb_nodes = list()
       for idx in tb_nodes_index:
@@ -86,7 +70,6 @@ class Node:
           dict_temp[key] = self.group[key]
         tb_nodes.append(dict_temp)
         pr_tb.append(pr_keys[idx])
-      logger.info("Pattern representation of bad nodes are : ".format(pr_tg))
       tb_nodes_size = 0
       for tb_node in tb_nodes:
         tb_nodes_size+len(tb_node)
@@ -129,20 +112,14 @@ class Node:
     values = list(self.group.values())
     current_level = self.level
     equal = True
-    logger.info("maximization started - level - {}".format(current_level))
-    logger.info("Max level : ".format(max_level))
     while equal and self.level < max_level:
       temp_level = self.level+1
-      logger.info("temp level : ".format(temp_level))
       pr_1 = Utility.find_pr(values[0],self.paa_value,temp_level)
-      logger.info("pattern representation of first value in group is : ".format(pr_1))
       for idx in range(1,len(values)):
         pr_2 = Utility.find_pr(values[idx],self.paa_value,temp_level)
-        logger.info("pattern representation of {} value in group is : {}".format(idx,pr_2))
         if pr_2 != pr_1:
           equal = False
       if equal:
         self.level = temp_level
     if current_level != self.level:      
       self.pr = Utility.find_pr(np.array(values[0]),self.paa_value,self.level)
-      logger.info("Patter represenation = {}".format(self.pr))

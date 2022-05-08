@@ -1,45 +1,39 @@
-import os
-import random
+from kapra import *
+from naive import *
+from utility import *
+from top_down import *
 
+import os
 import numpy as np
 import pandas as pd
-import utility as Utility
-import top_down as TopDown
-from node import Node
+import sys
+import random
 
-path = 'dataset/Sales_Transactions_Dataset_Weekly.csv'
-dataset = pd.read_csv(path)
-dataset.dropna(axis=0,inplace=True)
-columns = list(dataset.columns)
-columns[0] = 'Keys'
-for idx,column in enumerate(columns[1:]):
-  col_name = 'W{}'.format(idx)
-  columns[idx+1]=col_name
-dataset.columns = columns
-keys = list(dataset.Keys)
-for idx,key in enumerate(keys):
-  keys[idx] = 'K{}'.format(idx)
-dataset.Keys = keys
-dataset.to_csv(path.replace(".csv", "_cleaned.csv"), index=False)
-dataset_main = pd.read_csv("dataset/Sales_Transactions_Dataset_Weekly_cleaned.csv")
-dataset = dataset_main
-max_level = 4
-p_value = 2
-paa_value = 5
-#Kapra Algorithm
-QI_names = dataset.columns[1:]
-id_col = dataset.columns[0]
-min_attr,max_attr = Utility.get_min_max_attributes(dataset)
-data_dict = dict()
-for idx, row in dataset.iterrows():
-  data_dict[row[id_col]] = list(row[QI_names])
-good_leaves = list()
-bad_leaves = list()
-suppresed_nodes = list()
-node = Node(level=1, group=data_dict, paa_value=paa_value)
-node.start_split(p_value, max_level, good_leaves, bad_leaves)
-Utility.recycle_bad_leaves(p_value, good_leaves,bad_leaves,suppresed_nodes,paa_value)
-suppressed_nodes_list = list()
-for node in suppresed_nodes:
-  suppressed_nodes_list.append(node.group)
-  
+
+if __name__ == "__main__":
+    if len(sys.argv) == 6:
+        algorithm = sys.argv[1]
+        k_value = int(sys.argv[2])
+        p_value = int(sys.argv[3])
+        paa_value = int(sys.argv[4])
+        path = sys.argv[5]
+        if k_value < p_value:
+            print("Error:- Argument P value should be less than argument K value")
+        else:
+            dataset = pd.read_csv(path)            
+            if algorithm == 'naive':
+                naive = Naive(data=dataset,p_value=p_value,k_value=k_value,paa_value=paa_value)
+                naive.run()
+                print(naive.pattern_anonymized)
+            elif algorithm == 'kapra':
+                print(algorithm,k_value,p_value,paa_value)
+            else:
+                print('Error:- supported algorithms [naive, kapra]')
+    else:
+        print(" Error:- Please provide arguments in this order : k_value, p_value, paa_value, dataset path")
+        print(" Usage :- python kp_anonymity.py algorithm k_value p_value paa_value input_path")
+    '''
+    kp_anonymized = dict()
+    Utility.compute_anonymized_data(k_anonymized=anonymized_groups,p_anonymized=pattern_anonymized,kp_anonymized=kp_anonymized)
+    Utility.save_anonymized('output.csv',kp_anonymized)
+    '''
