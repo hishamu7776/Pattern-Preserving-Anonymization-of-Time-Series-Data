@@ -1,11 +1,13 @@
 import os
 import random
 
+from node import *
+
 import numpy as np
 import pandas as pd
 import utility as Utility
 import top_down as TopDown
-from node import *
+
 class Naive:
   def __init__(self,data=None,p_value=None,k_value=None,paa_value=None,max_level=4):
     if p_value!=None:
@@ -24,26 +26,30 @@ class Naive:
     self.max_level=max_level
     self.k_anonymized_data = list()
     self.pattern_anonymized = list()
+    self.pattern_map = dict()
 
   def run(self):
-    QI_names = self.data.columns[1:]
+    column_list = self.data.columns[1:]
     id_col = self.data.columns[0]
     min_attr,max_attr = Utility.get_min_max_attributes(self.data)
     data_dict = dict()
     for idx, row in self.data.iterrows():
-      data_dict[row[id_col]] = list(row[QI_names])
+      data_dict[row[id_col]] = list(row[column_list])
     duplicate = data_dict.copy()
-    TopDown.topdown_greedy(data=duplicate, k_val=self.k_value, max_val=max_attr, min_val=min_attr, k_anonymized=self.k_anonymized_data,columns=QI_names)
+    TopDown.topdown_greedy(data=duplicate, k_val=self.k_value, max_val=max_attr, min_val=min_attr, k_anonymized=self.k_anonymized_data,columns=column_list,ncp_or_vl='ncp')
     anonymized_groups = list()
     for group in self.k_anonymized_data:
       anonymized_groups.append(group)
       good_leaves = list()
       bad_leaves = list()
       node = Node(level=1, group=group, paa_value=self.paa_value)
-      node.start_splitting(self.p_value, self.max_level, good_leaves, bad_leaves)
+      node.start_split(self.p_value, self.max_level, good_leaves, bad_leaves)
       if len(bad_leaves) > 0:
         Naive.postprocessing(good_leaves, bad_leaves)
       self.pattern_anonymized.append(good_leaves)
+      for key in group.keys():
+        self.pattern_map[key] = node.pr
+
 
   @staticmethod
   def postprocessing(good_leaves, bad_leaves):
