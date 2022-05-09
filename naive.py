@@ -26,6 +26,7 @@ class Naive:
     self.max_level=max_level
     self.k_anonymized_data = list()
     self.pattern_anonymized = list()
+    self.good_leaves = list()
     self.pattern_map = dict()
 
   def run(self):
@@ -40,15 +41,16 @@ class Naive:
     anonymized_groups = list()
     for group in self.k_anonymized_data:
       anonymized_groups.append(group)
-      good_leaves = list()
       bad_leaves = list()
       node = Node(level=1, group=group, paa_value=self.paa_value)
-      node.start_split(self.p_value, self.max_level, good_leaves, bad_leaves)
+      node.start_split(self.p_value, self.max_level, self.good_leaves, bad_leaves)
       if len(bad_leaves) > 0:
-        Naive.postprocessing(good_leaves, bad_leaves)
-      self.pattern_anonymized.append(good_leaves)
-      for key in group.keys():
-        self.pattern_map[key] = node.pr
+        Naive.postprocessing(self.good_leaves, bad_leaves)
+      self.pattern_anonymized.append(self.good_leaves)
+    
+    for gl in self.good_leaves:
+      for key in gl.group.keys():
+        self.pattern_map[key] = gl.pr
 
 
   @staticmethod
