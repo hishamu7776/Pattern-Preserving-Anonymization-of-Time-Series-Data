@@ -6,14 +6,13 @@ import random
 import numpy as np
 import pandas as pd
 import utility as Utility
-import top_down as TopDown
+from top_down import *
 
 
 class Kapra:
     def __init__(self, data=None, p_value=None, k_value=None, paa_value=None, max_level=4):
         self.p_value = p_value
         self.k_value = k_value
-        self.k_value = 4
         self.paa_value = paa_value
         self.data = data
         self.max_level = max_level
@@ -44,7 +43,9 @@ class Kapra:
                 self.pattern_map[key] = node.pr           
             if node.size >= 2*self.p_value:
                 group_to_split = group.copy()
-                TopDown.topdown_greedy(data=group_to_split, k_val=self.p_value, k_anonymized=p_group_after_split,columns=column_list,ncp_or_vl='vl')
+                topdown = TopDownGreedy(k_val=self.p_value, k_anonymized=p_group_after_split,columns=column_list,method='vl')
+                topdown.topdown_greedy(data=group_to_split)
+                topdown.postprocessing()
             else:
                 p_group_list.append(group)
         p_group_list.extend(p_group_after_split) 
