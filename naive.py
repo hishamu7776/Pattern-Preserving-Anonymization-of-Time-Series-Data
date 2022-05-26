@@ -6,7 +6,7 @@ from node import *
 import numpy as np
 import pandas as pd
 import utility as Utility
-import top_down as TopDown
+from top_down import *
 
 class Naive:
   def __init__(self,data=None,p_value=None,k_value=None,paa_value=None,max_level=4):
@@ -37,7 +37,11 @@ class Naive:
     for idx, row in self.data.iterrows():
       data_dict[row[id_col]] = list(row[column_list])
     duplicate = data_dict.copy()
-    TopDown.topdown_greedy(data=duplicate, k_val=self.k_value, max_val=max_attr, min_val=min_attr, k_anonymized=self.k_anonymized_data,columns=column_list,ncp_or_vl='ncp')
+    topdown = TopDownGreedy(k_val=self.k_value, max_val=max_attr, min_val=min_attr, k_anonymized=self.k_anonymized_data,columns=column_list,method='ncp')
+    
+    topdown.topdown_greedy(data=duplicate)
+    topdown.postprocessing()
+
     anonymized_groups = list()
     for group in self.k_anonymized_data:
       anonymized_groups.append(group)
