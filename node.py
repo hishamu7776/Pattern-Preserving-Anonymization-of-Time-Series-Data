@@ -22,36 +22,61 @@ class Node:
 
     def start_split(self,P,max_level,good_leaves,bad_leaves):
         if self.size < P:
+            #Does not satisfies p-requirement, it will be labelled as bad leaf
             self.label = 'bad-leaf'
             bad_leaves.append(self)
             return
+        
         if self.level == max_level:
+            #SAX level reached maximum limit, labelled as good leaf
             self.label = 'good-leaf'
             good_leaves.append(self)
             return
-        if self.size >= P and self.size < 2*P:
+        
+        if P <= self.size < 2*P:
+            '''
+            This node is a good leaf as it satisfies p-requirement
+            Splitting this will lead to generate atleast 1 bad leaf.
+            '''
             self.maximize_level(max_level)
             self.label = 'good-leaf'
             good_leaves.append(self)
             return
+        '''
+        Checking node has to split by performing tentative splits. 
+        '''
+        level = self.level + 1
         tentative_child_nodes = dict()
-        temp_level = self.level + 1
-        for k, v in self.group.items():
-            pr_0 = Utility.find_pr(v,self.paa_value,temp_level)
-            if pr_0 in tentative_child_nodes.keys():
-                tentative_child_nodes[pr_0].append(k)
+        for key, time_series in self.group.items():
+            pattern = Utility.find_pr(time_series,self.paa_value,level)
+            if pattern in tentative_child_nodes.keys():
+                tentative_child_nodes[pattern].append(key)
             else:
-                tentative_child_nodes[pr_0] = [k]
-        size_of_tcns = [len(tentative_child_nodes[key]) for key in tentative_child_nodes]
-        is_good_leaf = np.all(np.array(size_of_tcns) < P)
+                tentative_child_nodes[pattern] = [key]
+        '''
+        Finding size of all tentative child nodes and checking for tentative nodes with more than P values.
+        '''
+        size_tcns = list()
+        is_good_leaf = True
+        for key in tentative_child_nodes:
+            size_tcn = len(tentative_child_nodes[key])
+            size_tcns.append(size_tcn)
+
         if is_good_leaf:
+            '''
+            If all tentative child node has fewer than p time series, the node will be labelled as good-leaf.
+            and this will be termination of recursion.
+            '''
             self.label = 'good-leaf'
             good_leaves.append(self)
             return
         else:
+            '''
+            Tentative child nodes can be splitted into subgroups.
+            '''
             pr_keys = list(tentative_child_nodes.keys())
             pr_tg = list()
-            tg_nodes_index = list(np.where(np.array(size_of_tcns) >= P)[0])
+            tg_nodes_index = list(np.where(np.array(size_tcns) >= P)[0])
             tg_nodes = list()
             for idx in tg_nodes_index:
                 tcn = tentative_child_nodes[pr_keys[idx]]
@@ -61,7 +86,7 @@ class Node:
                 tg_nodes.append(dict_temp)
                 pr_tg.append(pr_keys[idx])
             pr_tb = list()  
-            tb_nodes_index = list(np.where(np.array(size_of_tcns) < P)[0])
+            tb_nodes_index = list(np.where(np.array(size_tcns) < P)[0])
             tb_nodes = list()
             for idx in tb_nodes_index:
                 tcn = tentative_child_nodes[pr_keys[idx]]
@@ -108,18 +133,27 @@ class Node:
                         node = Node(level=self.level, pr=pr_tg[idx], label="good-leaf", group=tg_nodes[idx], parent=self,paa_value=self.paa_value)
                         self.child_node.append(node)
                         good_leaves.append(node)   
+
+
     def maximize_level(self, max_level):
+        '''
+        Maximize the level of node as long as the node has identical PR.
+        '''
         values = list(self.group.values())
+        iteration = True
         current_level = self.level
-        equal = True
-        while equal and self.level < max_level:
-            temp_level = self.level+1
-            pr_1 = Utility.find_pr(values[0],self.paa_value,temp_level)
-            for idx in range(1,len(values)):
-                pr_2 = Utility.find_pr(values[idx],self.paa_value,temp_level)
-                if pr_2 != pr_1:
-                    equal = False
-            if equal:
-                self.level = temp_level
-        if current_level != self.level:      
-            self.pr = Utility.find_pr(np.array(values[0]),self.paa_value,self.level)
+        pattern = None
+        while iteration:
+            level = self.level+1
+            for time_series in values:
+                if pattern is None:
+                    pattern = Utility.find_pr(time_series,self.paa_value,level)
+                else:
+                    temp_pattern = pattern
+                    pattern = Utility.find_pr(time_series,self.paa_value,level)
+                    iteration = temp_pattern == pattern
+                if iteration:
+                    self.level = level
+                    iteration = self.level <= max_level
+        if current_level != self.level:
+            self.pr = temp_pattern

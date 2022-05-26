@@ -37,12 +37,18 @@ class Naive:
     for idx, row in self.data.iterrows():
       data_dict[row[id_col]] = list(row[column_list])
     duplicate = data_dict.copy()
+
     topdown = TopDownGreedy(k_val=self.k_value, max_val=max_attr, min_val=min_attr, k_anonymized=self.k_anonymized_data,columns=column_list,method='ncp')
-    
     topdown.topdown_greedy(data=duplicate)
-    topdown.postprocessing()
+    topdown.flag = True
+    while topdown.flag:
+      print("Postprocessing started/restart")
+      topdown.postprocessing()
+    print(np.all(np.array([len(group) for group in self.k_anonymized_data]) < self.k_value))
+
 
     anonymized_groups = list()
+
     for group in self.k_anonymized_data:
       anonymized_groups.append(group)
       bad_leaves = list()
@@ -51,10 +57,11 @@ class Naive:
       if len(bad_leaves) > 0:
         Naive.postprocessing(self.good_leaves, bad_leaves)
       self.pattern_anonymized.append(self.good_leaves)
-    
+
     for gl in self.good_leaves:
       for key in gl.group.keys():
         self.pattern_map[key] = gl.pr
+
 
 
   @staticmethod
