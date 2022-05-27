@@ -4,91 +4,6 @@ from turtle import update
 import numpy as np
 import utility as Utility
 
-class KNode:
-    '''
-    To keep track of structure of k anonymized dataset.
-    label: node belongs to a split either u or v(r if first node without split).
-    index: index of group in anonymised table.
-    '''
-    def __init__(self, name = None, index = None):
-
-        self.index = index
-        self.label = name
-
-class Neighbours:
-    '''
-    To keep track of structure of k anonymized dataset.
-    Neighbour can be 
-    2 nodes,
-    2 neighbours,
-    or combination of both
-    '''
-    def __init__(self, u_node = None, v_node = None):
-        self.u_node = u_node
-        self.v_node = v_node
-
-    @staticmethod
-    def get_index(node=None,i=1):
-        if type(node) == KNode:
-            return node.index
-        else:
-            return Neighbours.get_index(node.u_node)
-
-    @staticmethod
-    def search_neighbor_node(index = None,neighbours = None):
-        neighbour_node = None
-        if type(neighbours.u_node) == Neighbours:
-            if neighbour_node != None:
-                return neighbour_node
-            neighbour_node = Neighbours.search_neighbor_node(index = index, neighbours = neighbours.u_node)            
-        else:
-            if neighbours.u_node.index == index:
-                return Neighbours.get_index(neighbours.v_node)
-            else:
-                neighbour_node = None
-        
-        if type(neighbours.v_node) == Neighbours:
-            if neighbour_node != None:
-                return neighbour_node
-            neighbour_node =  Neighbours.search_neighbor_node(index = index, neighbours = neighbours.v_node)
-        else:
-            if neighbours.v_node.index == index:
-                return Neighbours.get_index(neighbours.u_node)
-        return neighbour_node
-
-    @staticmethod
-    def delete_node(index=None, node = None):
-        status = False
-        if type(index)==int:
-            if type(node)!=Neighbours:
-                new_node_u, status_u = Neighbours.delete_node(index=index, node=node.u_node)
-                new_node_v, status_v = Neighbours.delete_node(index=index, node=node.v_node)
-            else:
-                if index != node.index:
-                    return node, True
-                else:
-                    return node, False
-            if status_u == True and status_v == True:
-                return Neighbours(u_node=new_node_u,v_node=new_node_v), True
-            elif status_u is True and status_v is False:
-                return status_u, True
-            elif status_u is False and status_v is True:
-                return status_u, True
-            else:
-                return node, False      
-        else:
-            print('Error: Bad argument! Argument should be an index.')
-            return node, status
-    @staticmethod
-    def print_node(node = None):
-        if type(node) == Neighbours:
-            Neighbours.print_node(node.u_node)
-            Neighbours.print_node(node.v_node)
-        else:
-            print(node.index)
-
-
-
 class TopDownGreedy:
     
     def __init__(self, k_val=None, max_val=None, min_val=None, k_anonymized=None,columns=None,method=None):
@@ -98,17 +13,17 @@ class TopDownGreedy:
         self.k_anonymized = k_anonymized
         self.columns = columns
         self.method = method
-        self.neighbours = None
+        self.neighbours = list()
+        self.flag = False
 
 
-    def topdown_greedy(self,data=None, name='r', node = None):
+    def topdown_greedy(self,data=None, name='r'):
         key_list = list(data.keys())
         size = len(key_list)
         if size<2*self.k_value:
             self.k_anonymized.append(data)
-            group_index = len(self.k_anonymized) - 1    
-            node = KNode(name = name, index = group_index)
-            return node
+            self.neighbours.append(name)
+            return
         else:
             rounds = 3
             rand_tuple = key_list[random.randint(0, len(key_list) - 1)]
@@ -157,23 +72,18 @@ class TopDownGreedy:
                 del data[key]
             
             if len(group_u) > self.k_value:
-                u_node = self.topdown_greedy(data = group_u, name='u', node = node)
+                self.topdown_greedy(data = group_u, name=name+'u')
             else:
                 self.k_anonymized.append(group_u) 
-                group_index = len(self.k_anonymized) - 1                                                    
-                u_node = KNode(name = 'u', index = group_index)
+                self.neighbours.append(name)
 
 
             if len(group_v) > self.k_value:
-                v_node = self.topdown_greedy(data = group_v,name = 'v', node = node)
-                neighbours = Neighbours(u_node=u_node,v_node=v_node)
+                self.topdown_greedy(data = group_v, name = name+'v')
             else:
-                self.k_anonymized.append(group_v)
-                group_index = len(self.k_anonymized) - 1
-                v_node = KNode(name = 'v', index = group_index)    
-                neighbours = Neighbours(u_node=u_node,v_node=v_node)                                 
-            self.neighbours = neighbours
-            return neighbours
+                self.k_anonymized.append(group_v)  
+                self.neighbours.append(name)                               
+            return
 
     def postprocessing(self):
         '''
@@ -214,7 +124,7 @@ class TopDownGreedy:
                 '''
                 Second, we compute the increase of penalty by merging G with the nearest neighbor group of G.
                 '''
-                neighbour_index = Neighbours.search_neighbor_node(group_idx,self.neighbours)
+                neighbour_index = TopDownGreedy.find_neighbour_node(neighbours = self.neighbours, group_index = group_idx)
                 loss_measure_neighbour = float('inf')
                 to_be_merged_neighbour = self.k_anonymized[neighbour_index].copy()
                 if neighbour_index != None:
@@ -230,19 +140,26 @@ class TopDownGreedy:
                 else:
                     self.k_anonymized[group_idx] = to_be_merged_og
                     self.k_anonymized[changed_group_index] = remaining_group_after_merge
+
         new_k_anonymised_list = list()        
-        group_with_small_size = 0
         for index, group in enumerate(self.k_anonymized):
             if index not in delete_list:
-                new_k_anonymised_list.append(group)
-                if len(group)<self.k_value:
-                    group_with_small_size = group_with_small_size+1
+                new_k_anonymised_list.append(group)                            
         for index in delete_list:
-            node, status = Neighbours.delete_node(index)
-            if status == True:
-                print('node deleted successfully.')
-                self.neighbours = node
-        self.k_anonymized = new_k_anonymised_list
-        if group_with_small_size>0:
-            self.postprocessing()
+            del self.neighbours[index]
+
+        self.k_anonymized = new_k_anonymised_list        
+        self.flag = np.all(np.array([len(group) for group in new_k_anonymised_list]) < self.k_value)
+
         return
+
+    @staticmethod
+    def find_neighbour_node(neighbours = None, group_index = None):
+        neighbour_index = 0
+        group_name = neighbours[group_index]
+        for index, name in enumerate(neighbours):
+            if group_index != index:
+                if name[:-1] == group_name[:-1]:
+                    neighbour_index = index
+                    break
+        return neighbour_index

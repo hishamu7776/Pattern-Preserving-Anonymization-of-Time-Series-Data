@@ -25,9 +25,9 @@ if __name__ == "__main__":
             if algorithm == 'naive':
                 naive = Naive(data=dataset,p_value=p_value,k_value=k_value,paa_value=paa_value)
                 naive.run()
-                #output_path = os.path.join('output\\naive',path.split('\\')[-1])
-                #Utility.create_anonymized_dataset(pattern_representation = naive.pattern_map, anonymized_data=naive.k_anonymized_data, final_anonymized_data=final_anonymized_data)
-                #Utility.save_to_csv(path=output_path,anonymized_data=final_anonymized_data)
+                output_path = os.path.join('output\\naive',path.split('\\')[-1])
+                Utility.create_anonymized_dataset(pattern_representation = naive.pattern_map, anonymized_data=naive.k_anonymized_data, final_anonymized_data=final_anonymized_data)
+                Utility.save_to_csv(path=output_path,anonymized_data=final_anonymized_data)
             elif algorithm == 'kapra':
                 kapra = Kapra(data=dataset, p_value=p_value, k_value=k_value, paa_value=paa_value, max_level=4)
                 kapra.run()
