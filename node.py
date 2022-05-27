@@ -1,11 +1,24 @@
 
 
+from tokenize import group
 from turtle import st
 import utility as Utility
 import numpy as np
 
 class Node:
     def __init__(self,level=1, pr="",label="intermediate",group=None,parent=None,paa_value=None):
+        '''
+        A Node contains multiple time series with same pattern representation
+        Purpose: 
+            Each node contains information about patterns and timeseries which follows the patterns.
+        Input:
+            level     : The sax level of current node. The patter representations are based on level 
+            pr        : Pattern representation of current node
+            label     : Whether the node is good-leaf, bad-leaf or intermediate
+            group     : Set of timeseries.
+            parent    : Parent node of current node
+            paa_value : paa_value for time series    
+        '''
         self.level = level
         self.members = list(group.keys())
         self.size = len(group)
@@ -21,6 +34,17 @@ class Node:
             self.pr = pr
 
     def start_split(self,P,max_level,good_leaves,bad_leaves):
+        '''
+        Stat split method will execute the splitting procedure of the node.
+        Input:
+            max_level  : Maximum level a node can have.
+            P          : A node should contain atleas P timeseries.
+            good_leaves: list of good leaves
+            bad_leaves : list of bad leaves
+        Output:
+            lists of good and bad leaves.
+            A tree node structure for each leaves.
+        '''
         if self.size < P:
             #Does not satisfies p-requirement, it will be labelled as bad leaf
             self.label = 'bad-leaf'
@@ -34,17 +58,14 @@ class Node:
             return
         
         if P <= self.size < 2*P:
-            '''
-            This node is a good leaf as it satisfies p-requirement
-            Splitting this will lead to generate atleast 1 bad leaf.
-            '''
+            # This node is a good leaf as it satisfies p-requirement. 
+            # Splitting this will lead to generate atleast 1 bad leaf.
+            
             self.maximize_level(max_level)
             self.label = 'good-leaf'
             good_leaves.append(self)
             return
-        '''
-        Checking node has to split by performing tentative splits. 
-        '''
+        # Checking node has to split by performing tentative splits. 
         level = self.level + 1
         tentative_child_nodes = dict()
         for key, time_series in self.group.items():
@@ -53,84 +74,84 @@ class Node:
                 tentative_child_nodes[pattern].append(key)
             else:
                 tentative_child_nodes[pattern] = [key]
-        '''
-        Finding size of all tentative child nodes and checking for tentative nodes with more than P values.
-        '''
+            
+        # Finding size of all tentative child nodes and checking for tentative nodes with more than P values.
         size_tcns = list()
-        is_good_leaf = True
         for key in tentative_child_nodes:
             size_tcn = len(tentative_child_nodes[key])
             size_tcns.append(size_tcn)
-
-        if is_good_leaf:
-            '''
-            If all tentative child node has fewer than p time series, the node will be labelled as good-leaf.
-            and this will be termination of recursion.
-            '''
+        if np.all(np.array(size_tcns) < P):
+            
+            # If all tentative child node has fewer than p time series, the node will be labelled as good-leaf.
+            # and this will be termination of recursion. The node cannot be splitted to child nodes.
+            
             self.label = 'good-leaf'
             good_leaves.append(self)
             return
         else:
-            '''
-            Tentative child nodes can be splitted into subgroups.
-            '''
-            pr_keys = list(tentative_child_nodes.keys())
-            pr_tg = list()
-            tg_nodes_index = list(np.where(np.array(size_tcns) >= P)[0])
-            tg_nodes = list()
-            for idx in tg_nodes_index:
-                tcn = tentative_child_nodes[pr_keys[idx]]
-                dict_temp = dict()
-                for key in tcn:
-                    dict_temp[key] = self.group[key]
-                tg_nodes.append(dict_temp)
-                pr_tg.append(pr_keys[idx])
-            pr_tb = list()  
-            tb_nodes_index = list(np.where(np.array(size_tcns) < P)[0])
-            tb_nodes = list()
-            for idx in tb_nodes_index:
-                tcn = tentative_child_nodes[pr_keys[idx]]
-                dict_temp = dict()
-                for key in tcn:
-                    dict_temp[key] = self.group[key]
-                tb_nodes.append(dict_temp)
-                pr_tb.append(pr_keys[idx])
-            tb_nodes_size = 0
-            for tb_node in tb_nodes:
-                tb_nodes_size+len(tb_node)
-            if tb_nodes_size >= P:
-                child_merge = dict()
-                for tb_node in tb_nodes:
-                    for k, v in tb_node.items():
-                        child_merge[k] = v
-                node_merge = Node(level=self.level, pr=self.pr, label="good-leaf", group=child_merge, parent=self,paa_value=self.paa_value)
-                self.child_node.append(node_merge)
-                good_leaves.append(node_merge)
-                nc = len(tg_nodes) + len(tb_nodes)
+            
+            # Tentative child nodes can be splitted into subgroups.
+            # Seperate Tentative good nodes and tentative bad nodes.
+            
+            patterns = list(tentative_child_nodes.keys()) 
+            tentative_good_node_patterns = list()
+            tentative_good_nodes = list()
+            tentative_bad_node_patterns = list()
+            tentative_bad_nodes = list()
+            for index, tentative_child_node in enumerate(tentative_child_nodes):
+                if len(tentative_child_node) >= P:
+                    tentative_good_node_keys = tentative_child_nodes[patterns[index]]
+                    tentative_good_node = dict()
+                    for tgn_key in tentative_good_node_keys:
+                        tentative_good_node[tgn_key] = self.group[tgn_key]
+                    tentative_good_nodes.append(tentative_good_node)
+                    tentative_good_node_patterns.append(patterns[index])
+                else:
+                    tentative_bad_node_keys = tentative_child_nodes[patterns[index]]
+                    tentative_bad_node = dict()
+                    for tgn_key in tentative_bad_node_keys:
+                        tentative_bad_node[tgn_key] = self.group[tgn_key]
+                    tentative_bad_nodes.append(tentative_bad_node)
+                    tentative_bad_node_patterns.append(patterns[index])
+
+            # If total values in tentative bad nodes is greater than P, the node is labelled as good-lead with current level
+            if sum([len(bad_node) for bad_node in tentative_bad_nodes]) >= P:
+                merge_bad_nodes = dict()
+                for bad_node in tentative_bad_nodes:
+                    for key, value in bad_node.items():
+                        merge_bad_nodes[key] = value
+                child_merge = Node(level=self.level, pr=self.pr, label="good-leaf", group=merge_bad_nodes, parent=self,paa_value=self.paa_value)
+                self.child_node.append(child_merge)
+                good_leaves.append(child_merge)
+                # If Total nodes nc are greater than 2, increase level. run splittling recursively. else label it as good leaf.
+                nc = len(tentative_good_node) + len(tentative_bad_nodes)
                 if nc >= 2:
-                    for idx in range(0, len(tg_nodes)):
-                        node = Node(level=self.level, pr=pr_tg[idx], label="intermediate", group=tg_nodes[idx], parent=self,paa_value=self.paa_value)
-                        self.child_node.append(node)
+                    for index, tantative_good_node in enumerate(tentative_good_nodes):
+                        self.level = level
+                        node = Node(level=self.level, pr=tentative_good_node_patterns[index], label="intermediate", group=tantative_good_node, parent=self, paa_value=self.paa_value)
                         node.start_split(P, max_level, good_leaves, bad_leaves)
                 else:
-                    for idx in range(0, len(tg_nodes)):
-                        node = Node(level=self.level, pr=pr_tg[idx], label="good-leaf", group=tg_nodes[idx], parent=self,paa_value=self.paa_value)
-                        self.child_node.append(node)
-                        good_leaves.append(node)
+                    for index, tantative_good_node in enumerate(tentative_good_nodes):
+                        self.level = level
+                        node = Node(level=self.level, pr=tentative_good_node_patterns[index], label="good-leaf", group=tantative_good_node, parent=self, paa_value=self.paa_value)
+                        self.child_node.append(tentative_good_node)
             else:
-                nc = len(tg_nodes) + len(tb_nodes)
-                for idx in range(0, len(tb_nodes)):
-                    node = Node(level=self.level, pr=pr_tb[idx], label="bad-leaf", group=tb_nodes[idx], parent=self,paa_value=self.paa_value)
+                nc = len(tentative_good_node) + len(tentative_bad_nodes)
+                self.level = level
+                #if total bad leaves are less than P. label it as bad leaf.
+                for index, tentative_bad_node in enumerate(tentative_bad_nodes):
+                    node = Node(level=self.level, pr=tentative_bad_node_patterns[index], label="bad-leaf", group=tentative_bad_node, parent=self,paa_value=self.paa_value)
                     self.child_node.append(node)
                     bad_leaves.append(node)
+                # If Total nodes nc are greater than 2, increase level. run splittling recursively. else label it as good leaf.
                 if nc >= 2:
-                    for idx in range(0, len(tg_nodes)):
-                        node = Node(level=self.level, pr=pr_tg[idx], label="intermediate", group=tg_nodes[idx], parent=self,paa_value=self.paa_value)
+                    for index, tantative_good_node in enumerate(tentative_good_nodes):
+                        node = Node(level=self.level, pr=tentative_good_node_patterns[index], label="intermediate", group=tentative_good_nodes[index], parent=self,paa_value=self.paa_value)
                         self.child_node.append(node)
                         node.start_split(P, max_level, good_leaves, bad_leaves)
                 else:
-                    for idx in range(0, len(tg_nodes)):
-                        node = Node(level=self.level, pr=pr_tg[idx], label="good-leaf", group=tg_nodes[idx], parent=self,paa_value=self.paa_value)
+                    for index, tantative_good_node in enumerate(tentative_good_nodes):
+                        node = Node(level=self.level, pr=tentative_good_node_patterns[index], label="good-leaf", group=tentative_good_nodes[index], parent=self,paa_value=self.paa_value)
                         self.child_node.append(node)
                         good_leaves.append(node)   
 

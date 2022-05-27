@@ -32,7 +32,8 @@ class Kapra:
         node = Node(level=1, group=data_dict, paa_value=self.paa_value)
         node.start_split(self.p_value, self.max_level, good_leaves, bad_leaves)
         suppressed_nodes = list()
-        Kapra.recycle_bad_leaves(self.p_value, good_leaves,bad_leaves,suppressed_nodes,self.paa_value)
+        if len(bad_leaves) > 0:
+            Kapra.recycle_bad_leaves(self.p_value, good_leaves,bad_leaves,suppressed_nodes,self.paa_value)
         for node in suppressed_nodes:
             self.suppressed_nodes_list.append(node.group)
         p_group_after_split = list()
