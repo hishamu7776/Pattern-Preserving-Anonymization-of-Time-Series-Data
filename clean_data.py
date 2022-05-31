@@ -17,7 +17,7 @@ if len(sys.argv) == 4:
     dataset.fillna(0,inplace=True)
     
     file_name = input_path.split('\\')[-1].split('.')
-    new_file_name = '{}_cleaned.{}'.format(file_name[0],file_name[1])
+    new_file_name = 'web_traffic.csv'
     path = os.path.join('datasets',new_file_name)
     print('use {} as path'.format(path))
     dataset.to_csv(path, index=False)

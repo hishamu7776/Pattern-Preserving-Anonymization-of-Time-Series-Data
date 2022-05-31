@@ -9,7 +9,7 @@ import utility as Utility
 from top_down import *
 
 class Naive:
-    def __init__(self,data=None,p_value=None,k_value=None,paa_value=None,max_level=4):
+    def __init__(self, data=None, p_value=None, k_value=None, paa_value=None, max_level=4):
         if p_value!=None:
             self.p_value = p_value
         else:
@@ -43,6 +43,9 @@ class Naive:
         topdown.flag = True
         while topdown.flag:
             topdown.postprocessing()
+        size = 0        
+        for grp in self.k_anonymized_data:
+          size+=len(grp)
         anonymized_groups = list()
         
         for grp_idx,group in enumerate(self.k_anonymized_data):

@@ -49,7 +49,7 @@ def create_anonymized_dataset(pattern_representation = None, anonymized_data=Non
 
 
 def save_to_csv(path='',anonymized_data=None):
-    with open(path,"w") as output_file:
+    with open(path,"w", encoding="utf-8") as output_file:
         row = ""
         i=0
         for k,v in anonymized_data.items():

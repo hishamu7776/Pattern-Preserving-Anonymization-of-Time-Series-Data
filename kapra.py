@@ -31,35 +31,42 @@ class Kapra:
         bad_leaves = list()
         node = Node(level=1, group=data_dict, paa_value=self.paa_value)
         node.start_split(self.p_value, self.max_level, good_leaves, bad_leaves)
+
         suppressed_nodes = list()
+        
         if len(bad_leaves) > 0:
             Kapra.recycle_bad_leaves(self.p_value, good_leaves,bad_leaves,suppressed_nodes,self.paa_value)
+
         for node in suppressed_nodes:
             self.suppressed_nodes_list.append(node.group)
-        p_group_after_split = list()
         p_group_list = list()
         for idx,node in enumerate(good_leaves):
             group = node.group
             for key in group.keys():
-                self.pattern_map[key] = node.pr           
+                self.pattern_map[key] = node.pr        
             if node.size >= 2*self.p_value:
                 group_to_split = group.copy()
+                p_group_after_split = list()
                 topdown = TopDownGreedy(k_val=self.p_value, k_anonymized=p_group_after_split,columns=column_list,method='vl')
-                topdown.topdown_greedy(data=group_to_split)
+                topdown.topdown_greedy(data=group_to_split)         
                 topdown.postprocessing()
+                topdown.flag = True
+                while topdown.flag:
+                    topdown.postprocessing()  
+                p_group_list.extend(p_group_after_split)
             else:
-                p_group_list.append(group)
-        p_group_list.extend(p_group_after_split) 
+                p_group_list.append(group)              
+     
         #step 1
         pgl_size = 0
         for group in p_group_list:
-            if len(group.keys())>=self.k_value:
+            if len(group) >= self.k_value:
                 self.group_list.append(group)
                 p_group_list.remove(group)
-        else:
-            pgl_size=pgl_size+len(group.keys())   
+            else:
+                pgl_size=pgl_size+len(group)
         #Iteration - Step 2 - 4
-        while pgl_size>=self.k_value:
+        while pgl_size >= self.k_value:
             G = Kapra.find_k_group_with_minimum_vl(pgl=p_group_list)
             pgl_size = pgl_size - len(G)
             while len(G.keys())<self.k_value:
@@ -73,6 +80,7 @@ class Kapra:
             group.update(G)
             self.group_list.append(group)
         
+
 
     @staticmethod
     def recycle_bad_leaves(P, good_leaves, bad_leaves, suppresed_nodes, paa_val):
