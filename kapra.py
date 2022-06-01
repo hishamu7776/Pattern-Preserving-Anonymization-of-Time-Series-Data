@@ -56,7 +56,6 @@ class Kapra:
                 p_group_list.extend(p_group_after_split)
             else:
                 p_group_list.append(group)              
-     
         #step 1
         pgl_size = 0
         for group in p_group_list:
