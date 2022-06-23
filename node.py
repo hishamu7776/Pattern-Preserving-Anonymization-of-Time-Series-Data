@@ -113,7 +113,6 @@ class Node:
                         tentative_bad_node[tgn_key] = self.group[tgn_key]
                     tentative_bad_nodes.append(tentative_bad_node)
                     tentative_bad_node_patterns.append(patterns[index])
-
             # If total values in tentative bad nodes is greater than P, the node is labelled as good-lead with current level
             if sum([len(bad_node) for bad_node in tentative_bad_nodes]) >= P:
                 merge_bad_nodes = dict()
@@ -124,21 +123,19 @@ class Node:
                 self.child_node.append(child_merge)
                 good_leaves.append(child_merge)
                 # If Total nodes nc are greater than 2, increase level. run splittling recursively. else label it as good leaf.
-                nc = len(tentative_good_node) + len(tentative_bad_nodes)
+                nc = len(tentative_good_nodes) + len(tentative_bad_nodes)
                 if nc >= 2:
                     for index, tantative_good_node in enumerate(tentative_good_nodes):
-                        self.level = level
                         node = Node(level=self.level, pr=tentative_good_node_patterns[index], label="intermediate", group=tantative_good_node, parent=self, paa_value=self.paa_value)
                         node.start_split(P, max_level, good_leaves, bad_leaves)
                 else:
                     for index, tantative_good_node in enumerate(tentative_good_nodes):
-                        self.level = level
                         node = Node(level=self.level, pr=tentative_good_node_patterns[index], label="good-leaf", group=tantative_good_node, parent=self, paa_value=self.paa_value)
                         self.child_node.append(tentative_good_node)
             else:
-                nc = len(tentative_good_node) + len(tentative_bad_nodes)
-                self.level = level
-                #if total bad leaves are less than P. label it as bad leaf.
+                nc = len(tentative_good_nodes) + len(tentative_bad_nodes)
+                
+                    #if total bad leaves are less than P. label it as bad leaf.
                 for index, tentative_bad_node in enumerate(tentative_bad_nodes):
                     node = Node(level=self.level, pr=tentative_bad_node_patterns[index], label="bad-leaf", group=tentative_bad_node, parent=self,paa_value=self.paa_value)
                     self.child_node.append(node)

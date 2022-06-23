@@ -84,7 +84,7 @@ class TopDownGreedy:
                 self.k_anonymized.append(group_v)  
                 self.neighbours.append(name)                               
             return
-
+        
     def postprocessing(self):
         '''
          If one group G has less than k tuples, we apply the local greedy adjustment similar to the bottom-up approach.
@@ -94,32 +94,44 @@ class TopDownGreedy:
         delete_list = list()
         for group_idx,group in enumerate(self.k_anonymized):
             group_size = len(group)
+            
             if group_size < self.k_value:
+
                 '''
                 First, we can find a set G' of (k - |G|) tuples in some other group that has more than (2k - |G|) tuples such that NCP(G U G') is minimized.
                 '''
+                
                 g_prime_size = self.k_value-group_size
                 loss_measure_og = float('inf')                
-                for index,other_group in enumerate(self.k_anonymized):
-                    remaining_group_after_merge = other_group.copy()
+                to_be_merged_og = group.copy()
+                to_be_merged_values = list(to_be_merged_og.values())
+                changed_group_index = None
+                for index,other_group in enumerate(self.k_anonymized): 
+                    g_prime = dict()  
                     if len(other_group) >= (2*self.k_value-group_size):
-                        to_be_merged_og = group.copy()
-                        to_be_merged_values = list(to_be_merged_og.values())
-                        loss_measurement = float('inf')
-                        for iteration in range(g_prime_size):
+                        temp_group = dict()
+                        for iteration in range(g_prime_size):                            
+                            loss_measurement = float('inf')
                             for key,value in other_group.items():
                                 if self.method == 'ncp':
                                     temp_measurement = Utility.compute_ncp( to_be_merged_values+[value], self.max_value, self.min_value)
                                 else:
                                     temp_measurement = Utility.compute_instant_value_loss(to_be_merged_values+[value])
-                                if temp_measurement<loss_measurement:
+                                if temp_measurement < loss_measurement:
                                     loss_measurement = temp_measurement
-                                    selected_group = { key:value }
-                                    del remaining_group_after_merge[key]
-                            to_be_merged_og.update(selected_group)
+                                    selected_item = { key:value } 
+                            
+                            temp_group.update(selected_item)
+                            
                         if loss_measurement<loss_measure_og:
                             loss_measure_og = loss_measurement
+                            g_prime = temp_group
                             changed_group_index = index
+                            
+                remaining_group_after_merge = dict()
+                if changed_group_index is not None:
+                    to_be_merged_og.update(g_prime)        
+                    remaining_group_after_merge = {k: v for k, v in self.k_anonymized[changed_group_index].items() if k not in list(g_prime.keys())}
                 
                 '''
                 Second, we compute the increase of penalty by merging G with the nearest neighbor group of G.
@@ -133,21 +145,19 @@ class TopDownGreedy:
                         loss_measure_neighbour = Utility.compute_ncp( list(to_be_merged_neighbour.values()), self.max_value, self.min_value)
                     else:
                         loss_measure_neighbour = Utility.compute_instant_value_loss(list(to_be_merged_neighbour.values()))
-                                        
-                if loss_measure_neighbour < loss_measure_og:
+                if loss_measure_neighbour < loss_measure_og:            
                     delete_list.append(group_idx)
                     self.k_anonymized[neighbour_index] = to_be_merged_neighbour
                 else:
                     self.k_anonymized[group_idx] = to_be_merged_og
                     self.k_anonymized[changed_group_index] = remaining_group_after_merge
-
-        new_k_anonymised_list = list()        
+        new_k_anonymised_list = list()
+        new_neighbours_list = list()
         for index, group in enumerate(self.k_anonymized):
             if index not in delete_list:
-                new_k_anonymised_list.append(group)                            
-        for index in delete_list:
-            del self.neighbours[index]
-
+                new_k_anonymised_list.append(group)
+                new_neighbours_list.append(self.neighbours[index])
+        self.neighbours = new_neighbours_list
         self.k_anonymized = new_k_anonymised_list        
         self.flag = np.all(np.array([len(group) for group in new_k_anonymised_list]) < self.k_value)
 
